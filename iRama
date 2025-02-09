@@ -1,0 +1,154 @@
+pip install sqlite3
+Шаг 3: Создание структуры проекта
+Создайте папку iRama и внутри неё создайте следующие файлы:
+
+database.py
+models.py
+main.py
+requirements.txt
+Шаг 4: Код файлов
+1. database.py
+Python
+Копировать
+import sqlite3
+
+def create_connection():
+    conn = sqlite3.connect('irama.db')
+    return conn
+
+def create_tables():
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            department INTEGER NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS shifts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            shift_date TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT NOT NULL,
+            FOREIGN KEY (employee_id) REFERENCES employees(id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            shift_id INTEGER NOT NULL,
+            check_in_time TEXT NOT NULL,
+            check_out_time TEXT,
+            FOREIGN KEY (employee_id) REFERENCES employees(id),
+            FOREIGN KEY (shift_id) REFERENCES shifts(id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+2. models.py
+Python
+Копировать
+class Employee:
+    def __init__(self, name, status, department):
+        self.name = name
+        self.status = status
+        self.department = department
+
+class Shift:
+    def __init__(self, employee_id, shift_date, start_time, end_time):
+        self.employee_id = employee_id
+        self.shift_date = shift_date
+        self.start_time = start_time
+        self.end_time = end_time
+
+class Attendance:
+    def __init__(self, employee_id, shift_id, check_in_time, check_out_time=None):
+        self.employee_id = employee_id
+        self.shift_id = shift_id
+        self.check_in_time = check_in_time
+        self.check_out_time = check_out_time
+3. main.py
+Python
+Копировать
+import sqlite3
+from database import create_connection, create_tables
+from models import Employee, Shift, Attendance
+
+create_tables()
+
+def add_employee(name, status, department):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO employees (name, status, department)
+        VALUES (?, ?, ?)
+    ''', (name, status, department))
+    conn.commit()
+    conn.close()
+
+def add_shift(employee_id, shift_date, start_time, end_time):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO shifts (employee_id, shift_date, start_time, end_time)
+        VALUES (?, ?, ?, ?)
+    ''', (employee_id, shift_date, start_time, end_time))
+    conn.commit()
+    conn.close()
+
+def add_attendance(employee_id, shift_id, check_in_time):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO attendance (employee_id, shift_id, check_in_time)
+        VALUES (?, ?, ?)
+    ''', (employee_id, shift_id, check_in_time))
+    conn.commit()
+    conn.close()
+
+def get_open_shifts():
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT e.name, s.shift_date, s.start_time, s.end_time
+        FROM shifts s
+        JOIN employees e ON s.employee_id = e.id
+        WHERE s.shift_date >= DATE('now')
+    ''')
+    shifts = cursor.fetchall()
+    conn.close()
+    return shifts
+
+if __name__ == "__main__":
+    add_employee('Иван Иванов', 'Основной', 1)
+    add_employee('Мария Петрова', 'Сезонный', 2)
+    add_shift(1, '2025-02-10', '09:00', '18:00')
+    add_shift(2, '2025-02-10', '10:00', '19:00')
+    open_shifts = get_open_shifts()
+    for shift in open_shifts:
+        print(f"Сотрудник: {shift[0]}, Дата смены: {shift[1]}, Время: {shift[2]} - {shift[3]}")
+4. requirements.txt
+Код
+Копировать
+sqlite3
+Шаг 5: Запуск программы
+Откройте командную строку и перейдите в папку iRama:
+Bash
+Копировать
+cd путь\к\папке\iRama
+Запустите программу:
+Bash
+Копировать
+python main.py
+Шаг 6: Дальнейшие шаги
+Интеграция с терминалами распознавания лиц: Вам нужно будет изучить API терминалов HiWatch и добавить соответствующий код для обработки данных.
+Отчёты по сотрудникам: Реализуйте функции для генерации отчётов, используя SQL-запросы для получения необходимых данных.
+Уведомления: Используйте библиотеки, такие как smtplib для отправки email-уведомлений.
+UX/UI: Рассмотрите возможность создания графического интерфейса с помощью библиотек, таких как Tkinter или PyQt.
+Тестирование и упаковка: Используйте PyInstaller для создания установочного файла.
+Заключение
